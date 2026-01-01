@@ -21,6 +21,16 @@ class ZivpnSettingsDesign(
     override val root: View
         get() = binding.root
 
+    private val stringAdapter = object : NullableTextAdapter<String> {
+        override fun from(value: String): String {
+            return value
+        }
+
+        override fun to(text: String?): String {
+            return text ?: ""
+        }
+    }
+
     init {
         binding.surface = surface
 
@@ -33,6 +43,7 @@ class ZivpnSettingsDesign(
 
             editableText(
                 value = store::serverHost,
+                adapter = stringAdapter,
                 icon = R.drawable.ic_baseline_dns,
                 title = R.string.zivpn_host,
                 placeholder = R.string.zivpn_host
@@ -40,21 +51,24 @@ class ZivpnSettingsDesign(
             
              editableText(
                 value = store::serverPass,
-                icon = R.drawable.ic_baseline_lock,
+                adapter = stringAdapter,
+                icon = R.drawable.ic_baseline_vpn_lock,
                 title = R.string.zivpn_pass,
                 placeholder = R.string.zivpn_pass
             )
 
              editableText(
                 value = store::serverObfs,
-                icon = R.drawable.ic_baseline_vpn_key,
+                adapter = stringAdapter,
+                icon = R.drawable.ic_baseline_info,
                 title = R.string.zivpn_obfs,
                 placeholder = R.string.zivpn_obfs
             )
 
             editableText(
                 value = store::portRanges,
-                icon = R.drawable.ic_baseline_settings_ethernet,
+                adapter = stringAdapter,
+                icon = R.drawable.ic_baseline_apps,
                 title = R.string.zivpn_ports,
                 placeholder = R.string.zivpn_ports_summary
             )
