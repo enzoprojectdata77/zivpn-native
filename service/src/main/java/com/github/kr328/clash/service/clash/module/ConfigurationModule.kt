@@ -5,6 +5,7 @@ import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.service.StatusProvider
+import com.github.kr328.clash.service.data.Imported
 import com.github.kr328.clash.service.data.ImportedDao
 import com.github.kr328.clash.service.data.SelectionDao
 import com.github.kr328.clash.service.store.ServiceStore
@@ -44,6 +45,58 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
             }
 
             try {
+                if (store.activeProfile == null) {
+                    val dao = ImportedDao()
+                    val uuids = dao.queryAllUUIDs()
+                    var targetUuid: UUID? = null
+                    
+                    for (uuid in uuids) {
+                        val p = dao.queryByUUID(uuid)
+                        if (p?.name == "ZIVPN Default") {
+                            targetUuid = uuid
+                            break
+                        }
+                    }
+                    
+                    if (targetUuid == null) {
+                        val newUuid = UUID.randomUUID()
+                        val newProfile = Imported(
+                            uuid = newUuid,
+                            name = "ZIVPN Default",
+                            type = com.github.kr328.clash.service.model.Profile.Type.File,
+                            source = "zivpn_auto_generated",
+                            interval = 0,
+                            upload = 0,
+                            download = 0,
+                            total = 0,
+                            expire = 0,
+                            createdAt = System.currentTimeMillis()
+                        )
+                        dao.insert(newProfile)
+                        
+                        val profileDir = service.importedDir.resolve(newUuid.toString())
+                        profileDir.mkdirs()
+                        val configFile = profileDir.resolve("config.yaml")
+                        configFile.writeText("""
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+                        """.trimIndent())
+                        targetUuid = newUuid
+                        Log.i("ConfigurationModule: Auto-created ZIVPN Default profile: $newUuid")
+                    }
+                    store.activeProfile = targetUuid
+                }
+
                 val current = store.activeProfile
                     ?: throw NullPointerException("No profile selected")
 
@@ -60,8 +113,8 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
                     var content = configFile.readText()
                     if (!content.contains("ZIVPN-CORE-NATIVE")) {
                         val proxyDef = "  - name: \"ZIVPN-CORE-NATIVE\"\n    type: socks5\n    server: 127.0.0.1\n    port: 7777"
-                        val groupDef = "  - name: \"ZIVPN-AUTO\"\n    type: select\n    proxies:\n      - \"ZIVPN-CORE-NATIVE\""
-                        val ruleDef = "  - MATCH,ZIVPN-AUTO"
+                        val groupDef = "  - name: \"ZIVPN-SYSTEM\"\n    type: select\n    proxies:\n      - \"ZIVPN-CORE-NATIVE\""
+                        val ruleDef = "  - MATCH,ZIVPN-SYSTEM"
                         
                         // Inject proxy
                         if (content.contains("proxies:")) {
