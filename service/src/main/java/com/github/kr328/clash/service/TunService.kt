@@ -85,12 +85,12 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
     private fun startProcessLogger(process: Process, tag: String) {
         Thread {
             process.inputStream.bufferedReader().use { reader ->
-                reader.forEachLine { Log.i(tag, it) }
+                reader.forEachLine { Log.i("[$tag] $it") }
             }
         }.start()
         Thread {
             process.errorStream.bufferedReader().use { reader ->
-                reader.forEachLine { Log.e(tag, it) }
+                reader.forEachLine { Log.e("[$tag] $it") }
             }
         }.start()
     }
@@ -111,7 +111,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         val ranges = zivpnStore.portRanges.split(",").filter { it.isNotBlank() }
         val ports = (1080 until (1080 + ranges.size)).toList()
 
-        Log.d("ZIVPN", "Starting ZIVPN Cores with Host: $serverHost, Ranges: ${ranges.size}")
+        Log.d("ZIVPN: Starting ZIVPN Cores with Host: $serverHost, Ranges: ${ranges.size}")
 
         try {
             val tunnels = mutableListOf<String>()
@@ -152,9 +152,9 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             coreProcesses.add(lbProcess)
             startProcessLogger(lbProcess, "ZIVPN-LB")
             
-            Log.i("ZIVPN", "ZIVPN Native Cores (8 instances + LB) started successfully")
+            Log.i("ZIVPN: ZIVPN Native Cores (8 instances + LB) started successfully")
         } catch (e: Exception) {
-            Log.e("ZIVPN", "Failed to start ZIVPN Cores: ${e.message}", e)
+            Log.e("ZIVPN: Failed to start ZIVPN Cores: ${e.message}", e)
         }
     }
 
