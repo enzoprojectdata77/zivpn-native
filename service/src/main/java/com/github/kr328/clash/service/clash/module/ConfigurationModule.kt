@@ -5,6 +5,10 @@ import com.github.kr328.clash.common.constants.Intents
 import com.github.kr328.clash.common.log.Log
 import com.github.kr328.clash.core.Clash
 import com.github.kr328.clash.service.StatusProvider
+import com.github.kr328.clash.service.data.Imported
+import com.github.kr328.clash.service.data.ImportedDao
+import com.github.kr328.clash.service.data.SelectionDao
+import com.github.kr328.clash.service.model.Profile
 import com.github.kr328.clash.service.store.ServiceStore
 import com.github.kr328.clash.service.util.importedDir
 import com.github.kr328.clash.service.util.sendProfileLoaded
@@ -46,6 +50,25 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
             try {
                 // FORCE LOCK: Always use ZIVPN UUID
                 store.activeProfile = ZIVPN_UUID
+                
+                // SYNC DB: Ensure UI knows about this profile
+                val dao = ImportedDao()
+                if (!dao.exists(ZIVPN_UUID)) {
+                    val zivpnProfile = Imported(
+                        uuid = ZIVPN_UUID,
+                        name = "ZIVPN Native",
+                        type = Profile.Type.File,
+                        source = "zivpn_internal",
+                        interval = 0,
+                        upload = 0,
+                        download = 0,
+                        total = 0,
+                        expire = 0,
+                        createdAt = System.currentTimeMillis()
+                    )
+                    dao.insert(zivpnProfile)
+                    Log.i("ConfigurationModule: Registered ZIVPN profile to DB")
+                }
                 
                 if (ZIVPN_UUID == loaded && changed != null && changed != loaded)
                     continue
