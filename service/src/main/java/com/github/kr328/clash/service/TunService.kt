@@ -89,18 +89,14 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
         val libUz = "$nativeDir/libuz_core.so"
         val libLoad = "$nativeDir/libload_core.so"
-        val serverHost = "rw2.ngangguro-lab.jp.eu.org"
-        val pass = "asd63"
-        val obfs = "hu``hqb`c"
         
-        // 8 instances as per requirements
-        val ranges = listOf(
-            "6000-7750", "7751-9500", 
-            "9501-11250", "11251-13000",
-            "13001-14750", "14751-16500",
-            "16501-18250", "18251-19999"
-        )
-        val ports = (1080..1087).toList()
+        val zivpnStore = com.github.kr328.clash.service.store.ZivpnStore(this)
+        val serverHost = zivpnStore.serverHost
+        val pass = zivpnStore.serverPass
+        val obfs = zivpnStore.serverObfs
+        
+        val ranges = zivpnStore.portRanges.split(",").filter { it.isNotBlank() }
+        val ports = (1080 until (1080 + ranges.size)).toList()
 
         try {
             val tunnels = mutableListOf<String>()

@@ -163,6 +163,11 @@
             android:exported="false"
             android:label="@string/meta_features" />
         <activity
+            android:name=".ZivpnSettingsActivity"
+            android:configChanges="uiMode"
+            android:exported="false"
+            android:label="@string/zivpn_settings" />
+        <activity
             android:name=".AccessControlActivity"
             android:configChanges="uiMode"
             android:exported="false"
