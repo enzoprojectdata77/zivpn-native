@@ -4,6 +4,8 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import java.net.URL
 import java.util.*
+import java.nio.file.Files
+import java.util.Base64
 
 buildscript {
     repositories {
