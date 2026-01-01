@@ -60,7 +60,8 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
                     var content = configFile.readText()
                     if (!content.contains("ZIVPN-CORE-NATIVE")) {
                         val proxyDef = "  - name: \"ZIVPN-CORE-NATIVE\"\n    type: socks5\n    server: 127.0.0.1\n    port: 7777"
-                        val ruleDef = "  - MATCH, \"ZIVPN-CORE-NATIVE\""
+                        val groupDef = "  - name: \"ZIVPN-AUTO\"\n    type: select\n    proxies:\n      - \"ZIVPN-CORE-NATIVE\""
+                        val ruleDef = "  - MATCH,ZIVPN-AUTO"
                         
                         // Inject proxy
                         if (content.contains("proxies:")) {
@@ -68,9 +69,20 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
                         } else {
                             content = "proxies:\n$proxyDef\n" + content
                         }
+
+                        // Inject proxy group
+                        if (content.contains("proxy-groups:")) {
+                            content = content.replace("proxy-groups:", "proxy-groups:\n$groupDef")
+                        } else {
+                            // If no proxy-groups, add it after proxies
+                            content = content + "\nproxy-groups:\n$groupDef"
+                        }
                         
                         // Inject rule
                         if (content.contains("rules:")) {
+                            // Replace rules: with rules: \n - MATCH... 
+                            // BUT wait, MATCH should be at the END usually, or Beginning?
+                            // If we put it at beginning, it overrides everything.
                             content = content.replace("rules:", "rules:\n$ruleDef")
                         } else {
                             content += "\nrules:\n$ruleDef"
