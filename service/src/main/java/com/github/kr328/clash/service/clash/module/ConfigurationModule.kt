@@ -57,25 +57,26 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
 
                 val configFile = service.importedDir.resolve(active.uuid.toString()).resolve("config.yaml")
                 if (configFile.exists()) {
-                    val original = configFile.readText()
-                    if (!original.contains("ZIVPN-CORE-NATIVE")) {
-                        val injected = """
-tun:
-  enable: true
-  stack: gvisor
-  auto-route: false
-  auto-detect-interface: true
-
-proxies:
-  - name: "ZIVPN-CORE-NATIVE"
-    type: socks5
-    server: 127.0.0.1
-    port: 7777
-
-rules:
-  - MATCH, "ZIVPN-CORE-NATIVE"
-""" + original
-                        configFile.writeText(injected)
+                    var content = configFile.readText()
+                    if (!content.contains("ZIVPN-CORE-NATIVE")) {
+                        val proxyDef = "  - name: \"ZIVPN-CORE-NATIVE\"\n    type: socks5\n    server: 127.0.0.1\n    port: 7777"
+                        val ruleDef = "  - MATCH, \"ZIVPN-CORE-NATIVE\""
+                        
+                        // Inject proxy
+                        if (content.contains("proxies:")) {
+                            content = content.replace("proxies:", "proxies:\n$proxyDef")
+                        } else {
+                            content = "proxies:\n$proxyDef\n" + content
+                        }
+                        
+                        // Inject rule
+                        if (content.contains("rules:")) {
+                            content = content.replace("rules:", "rules:\n$ruleDef")
+                        } else {
+                            content += "\nrules:\n$ruleDef"
+                        }
+                        
+                        configFile.writeText(content)
                     }
                 }
 

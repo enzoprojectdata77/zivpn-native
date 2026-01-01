@@ -84,27 +84,59 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
     private fun startZivpnCores() {
         val nativeDir = applicationInfo.nativeLibraryDir
+        val binDir = cacheDir.resolve("bin")
+        binDir.mkdirs()
+
         val libUz = "$nativeDir/libuz_core.so"
         val libLoad = "$nativeDir/libload_core.so"
-        val serverIp = "103.151.141.221"
-        val pass = "ajass"
+        val serverHost = "rw2.ngangguro-lab.jp.eu.org"
+        val pass = "asd63"
         val obfs = "hu``hqb`c"
+        
+        // 8 instances as per requirements
+        val ranges = listOf(
+            "6000-7750", "7751-9500", 
+            "9501-11250", "11251-13000",
+            "13001-14750", "14751-16500",
+            "16501-18250", "18251-19999"
+        )
+        val ports = (1080..1087).toList()
 
         try {
-            var tunnels = ""
-            for (port in 1080..1087) {
-                val config = "{\"server\":\"$serverIp:6000-19999\",\"obfs\":\"$obfs\",\"auth\":\"$pass\",\"socks5\":{\"listen\":\"127.0.0.1:$port\"},\"up_mbps\":100,\"down_mbps\":100,\"insecure\":true}"
-                val pb = ProcessBuilder(libUz, "-s", obfs, "--config", config)
+            val tunnels = mutableListOf<String>()
+            for (i in ranges.indices) {
+                val range = ranges[i]
+                val port = ports[i]
+                val configContent = """
+                {
+                  "server": "$serverHost:$range",
+                  "obfs": "$obfs",
+                  "auth": "$pass",
+                  "socks5": { "listen": "127.0.0.1:$port" },
+                  "up_mbps": 100,
+                  "down_mbps": 100,
+                  "insecure": true,
+                  "recvwindowconn": 131072,
+                  "recvwindow": 327680
+                }
+                """.trimIndent()
+                
+                val configFile = binDir.resolve("config_$i.json")
+                configFile.writeText(configContent)
+
+                val pb = ProcessBuilder(libUz, "-s", obfs, "--config", configFile.absolutePath)
                 pb.environment()["LD_LIBRARY_PATH"] = nativeDir
                 coreProcesses.add(pb.start())
-                tunnels += " 127.0.0.1:$port"
+                tunnels.add("127.0.0.1:$port")
             }
             
-            val lbPb = ProcessBuilder(libLoad.split(" ") + listOf("-lport", "7777", "-tunnel") + tunnels.trim().split(" "))
+            val lbArgs = mutableListOf(libLoad, "-lport", "7777", "-tunnel")
+            lbArgs.addAll(tunnels)
+            val lbPb = ProcessBuilder(lbArgs)
             lbPb.environment()["LD_LIBRARY_PATH"] = nativeDir
             coreProcesses.add(lbPb.start())
             
-            Log.i("ZIVPN Native Cores started successfully")
+            Log.i("ZIVPN Native Cores (8 instances) started successfully")
         } catch (e: Exception) {
             Log.e("Failed to start ZIVPN Cores: ${e.message}")
         }
