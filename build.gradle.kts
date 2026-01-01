@@ -156,6 +156,20 @@ subprojects {
                     keyAlias = prop.getProperty("key.alias")!!
                     keyPassword = prop.getProperty("key.password")!!
                 }
+            } else if (System.getenv("SIGNING_KEY_STORE_BASE64") != null) {
+                create("release") {
+                    try {
+                        val tmpKeystore = Files.createTempFile("keystore", ".jks").toFile()
+                        tmpKeystore.writeBytes(Base64.getDecoder().decode(System.getenv("SIGNING_KEY_STORE_BASE64").trim()))
+                        
+                        storeFile = tmpKeystore
+                        storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                        keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                        keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+                    } catch (e: Exception) {
+                        println("Failed to setup signing from env: ${e.message}")
+                    }
+                }
             }
         }
 
