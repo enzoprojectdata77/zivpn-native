@@ -15,6 +15,12 @@ jobs:
           submodules: 'recursive'
           fetch-depth: 0
 
+      - name: Fix Submodule Path
+        run: |
+          mkdir -p core/src/foss/golang/clash
+          git submodule update --init --recursive --force
+          cp -r core/src/foss/golang/clash/* core/src/foss/golang/clash/ || true
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
@@ -37,6 +43,7 @@ jobs:
       - name: Build APK (Alpha Release)
         run: |
           chmod +x gradlew
+          export JAVA_HOME=$JAVA_HOME_21_X64
           ./gradlew :app:assembleAlphaRelease --stacktrace
 
       - name: Upload ZIVPN Native APK
