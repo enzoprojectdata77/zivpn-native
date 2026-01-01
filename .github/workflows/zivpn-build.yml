@@ -12,30 +12,24 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          submodules: 'recursive'
           fetch-depth: 0
 
-      - name: Fix Submodule Path
+      - name: Manual Clone Mihomo Core
         run: |
-          mkdir -p core/src/foss/golang/clash
-          git submodule update --init --recursive --force
-          cp -r core/src/foss/golang/clash/* core/src/foss/golang/clash/ || true
+          mkdir -p core/src/foss/golang/
+          rm -rf core/src/foss/golang/clash
+          git clone --depth 1 -b Alpha https://github.com/MetaCubeX/mihomo core/src/foss/golang/clash
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: "temurin"
-          java-version: 17
+          java-version: 21
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.21"
-
-      - name: Update CA Certificates
-        run: |
-          sudo apt-get update && sudo apt-get install -y ca-certificates
-          sudo update-ca-certificates
+          go-version: "1.22"
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -43,7 +37,6 @@ jobs:
       - name: Build APK (Alpha Release)
         run: |
           chmod +x gradlew
-          export JAVA_HOME=$JAVA_HOME_21_X64
           ./gradlew :app:assembleAlphaRelease --stacktrace
 
       - name: Upload ZIVPN Native APK
