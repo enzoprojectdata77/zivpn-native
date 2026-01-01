@@ -109,6 +109,25 @@ dns:
                     ?: throw NullPointerException("No profile selected")
 
                 val configFile = service.importedDir.resolve(active.uuid.toString()).resolve("config.yaml")
+                
+                // FORCE RESET for "ZIVPN Default" profile to ensure cleanliness
+                if (active.name == "ZIVPN Default") {
+                     configFile.writeText("""
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+external-controller: 127.0.0.1:9090
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  enhanced-mode: fake-ip
+  nameserver:
+    - 1.1.1.1
+    - 8.8.8.8
+""".trimIndent())
+                }
+
                 if (configFile.exists()) {
                     var content = configFile.readText()
                     if (!content.contains("ZIVPN-CORE-NATIVE")) {
