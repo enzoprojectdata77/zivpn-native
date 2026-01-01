@@ -63,7 +63,7 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
 tun:
   enable: true
   stack: gvisor
-  auto-route: true
+  auto-route: false
   auto-detect-interface: true
 
 proxies:
