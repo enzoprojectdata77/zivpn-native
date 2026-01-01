@@ -118,24 +118,11 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             for (i in ranges.indices) {
                 val range = ranges[i]
                 val port = ports[i]
-                val configContent = """
-                {
-                  "server": "$serverHost:$range",
-                  "obfs": "$obfs",
-                  "auth": "$pass",
-                  "socks5": { "listen": "127.0.0.1:$port" },
-                  "up_mbps": 100,
-                  "down_mbps": 100,
-                  "insecure": true,
-                  "recvwindowconn": 131072,
-                  "recvwindow": 327680
-                }
-                """.trimIndent()
+                val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680}"""
                 
-                val configFile = binDir.resolve("config_$i.json")
-                configFile.writeText(configContent)
-
-                val pb = ProcessBuilder(libUz, "-s", obfs, "--config", configFile.absolutePath)
+                // FIXED: Pass config content DIRECTLY as argument, not file path!
+                // Based on reverse engineering of working Magisk module.
+                val pb = ProcessBuilder(libUz, "-s", obfs, "--config", configContent)
                 pb.environment()["LD_LIBRARY_PATH"] = nativeDir
                 val process = pb.start()
                 coreProcesses.add(process)
