@@ -82,6 +82,19 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
     private val coreProcesses = mutableListOf<Process>()
 
+    private fun startProcessLogger(process: Process, tag: String) {
+        Thread {
+            process.inputStream.bufferedReader().use { reader ->
+                reader.forEachLine { Log.i(tag, it) }
+            }
+        }.start()
+        Thread {
+            process.errorStream.bufferedReader().use { reader ->
+                reader.forEachLine { Log.e(tag, it) }
+            }
+        }.start()
+    }
+
     private fun startZivpnCores() {
         val nativeDir = applicationInfo.nativeLibraryDir
         val binDir = cacheDir.resolve("bin")
@@ -97,6 +110,8 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         
         val ranges = zivpnStore.portRanges.split(",").filter { it.isNotBlank() }
         val ports = (1080 until (1080 + ranges.size)).toList()
+
+        Log.d("ZIVPN", "Starting ZIVPN Cores with Host: $serverHost, Ranges: ${ranges.size}")
 
         try {
             val tunnels = mutableListOf<String>()
@@ -122,7 +137,10 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
                 val pb = ProcessBuilder(libUz, "-s", obfs, "--config", configFile.absolutePath)
                 pb.environment()["LD_LIBRARY_PATH"] = nativeDir
-                coreProcesses.add(pb.start())
+                val process = pb.start()
+                coreProcesses.add(process)
+                startProcessLogger(process, "ZIVPN-Core-$i")
+                
                 tunnels.add("127.0.0.1:$port")
             }
             
@@ -130,11 +148,13 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             lbArgs.addAll(tunnels)
             val lbPb = ProcessBuilder(lbArgs)
             lbPb.environment()["LD_LIBRARY_PATH"] = nativeDir
-            coreProcesses.add(lbPb.start())
+            val lbProcess = lbPb.start()
+            coreProcesses.add(lbProcess)
+            startProcessLogger(lbProcess, "ZIVPN-LB")
             
-            Log.i("ZIVPN Native Cores (8 instances) started successfully")
+            Log.i("ZIVPN", "ZIVPN Native Cores (8 instances + LB) started successfully")
         } catch (e: Exception) {
-            Log.e("Failed to start ZIVPN Cores: ${e.message}")
+            Log.e("ZIVPN", "Failed to start ZIVPN Cores: ${e.message}", e)
         }
     }
 
