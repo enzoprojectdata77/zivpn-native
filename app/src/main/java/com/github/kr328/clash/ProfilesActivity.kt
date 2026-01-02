@@ -41,7 +41,7 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                 design.requests.onReceive {
                     when (it) {
                         ProfilesDesign.Request.Create ->
-                            startActivity(NewProfileActivity::class.intent)
+                            design?.showToast(R.string.version_name, ToastDuration.Short) // Disabled
                         ProfilesDesign.Request.UpdateAll ->
                             withProfile {
                                 try {
@@ -61,7 +61,7 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                         is ProfilesDesign.Request.Delete ->
                             withProfile { delete(it.profile.uuid) }
                         is ProfilesDesign.Request.Edit ->
-                            startActivity(PropertiesActivity::class.intent.setUUID(it.profile.uuid))
+                            design?.showToast(R.string.version_name, ToastDuration.Short) // Disabled
                         is ProfilesDesign.Request.Active -> {
                             withProfile {
                                 if (it.profile.imported)
@@ -71,9 +71,7 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                             }
                         }
                         is ProfilesDesign.Request.Duplicate -> {
-                            val uuid = withProfile { clone(it.profile.uuid) }
-
-                            startActivity(PropertiesActivity::class.intent.setUUID(uuid))
+                            design?.showToast(R.string.version_name, ToastDuration.Short) // Disabled
                         }
                     }
                 }
@@ -117,11 +115,7 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
             design?.showToast(
                 getString(R.string.toast_profile_updated_failed, name, reason),
                 ToastDuration.Long
-            ){
-                setAction(R.string.edit) {
-                    startActivity(PropertiesActivity::class.intent.setUUID(uuid))
-                }
-            }
+            )
         }
     }
 }
