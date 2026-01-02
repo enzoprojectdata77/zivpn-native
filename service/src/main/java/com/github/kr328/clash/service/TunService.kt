@@ -124,19 +124,16 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
         try {
             val tunnels = mutableListOf<String>()
-            val cpuCores = Runtime.getRuntime().availableProcessors().toString()
             
             for (i in ranges.indices) {
                 val range = ranges[i]
                 val port = ports[i]
-                // OPTIMIZED: Increased recvwindow to ~6MB for high throughput
-                val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":6553600}"""
+                // STANDARD: Default recvwindow for stability (low RAM usage)
+                val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680}"""
                 
                 val pb = ProcessBuilder(libUz, "-s", obfs, "--config", configContent)
                 pb.environment()["LD_LIBRARY_PATH"] = nativeDir
-                // PERFORMANCE TUNING: Reduce GC frequency for speed
-                pb.environment()["GOGC"] = "200" 
-                pb.environment()["GOMAXPROCS"] = cpuCores
+                // Removed GOGC/GOMAXPROCS tuning
                 
                 val process = pb.start()
                 coreProcesses.add(process)
@@ -149,9 +146,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             lbArgs.addAll(tunnels)
             val lbPb = ProcessBuilder(lbArgs)
             lbPb.environment()["LD_LIBRARY_PATH"] = nativeDir
-            // PERFORMANCE TUNING
-            lbPb.environment()["GOGC"] = "200"
-            lbPb.environment()["GOMAXPROCS"] = cpuCores
+            // Removed GOGC/GOMAXPROCS tuning
             
             val lbProcess = lbPb.start()
             coreProcesses.add(lbProcess)

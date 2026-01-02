@@ -52,7 +52,7 @@ Setiap modifikasi harus memberikan hasil yang sesuai dengan **Tujuan Utama**, ya
 *   **User Experience**: Migrasi dari modul Magisk ke aplikasi native harus membuat penggunaan VPN menjadi lebih mudah bagi pengguna awam melalui antarmuka (UI).
 *   **Performa**: Mempertahankan keunggulan kecepatan Load Balancer (port 7777) dan Hysteria dari versi Magisk sebelumnya.
 
-## Status Terkini (Checkpoint - 2 Januari 2026 - FINAL PLATINUM)
+## Status Terkini (Checkpoint - 2 Januari 2026 - FINAL STABLE)
 **STATUS: UNKILLABLE, LITE & PRODUCTION READY**
 ZIVPN Native telah mencapai bentuk finalnya. Dioptimalkan untuk ukuran (Lite) dan ketahanan terhadap background kill (Unkillable).
 
@@ -71,21 +71,7 @@ ZIVPN Native telah mencapai bentuk finalnya. Dioptimalkan untuk ukuran (Lite) da
 1.  **Branch**: `cleanup-unused-features` (Main Development).
 2.  **Size**: ~20MB (arm64-v8a Release).
 3.  **Permissions**: Ditambahkan `WAKE_LOCK`.
-
-## Performance Tuning (Experimental - 2 Jan 2026)
-Optimasi ini bertujuan untuk meningkatkan throughput dan mengurangi CPU usage, namun meningkatkan penggunaan RAM.
-
-### Parameter Berubah:
-1.  **Go Runtime**:
-    *   `GOGC` = **200** (Default: 100). *Efek: GC lebih jarang, Speed naik, RAM usage naik.*
-    *   `GOMAXPROCS` = **CPU Core Count**. *Efek: Multithreading optimal.*
-2.  **Hysteria (`libuz`)**:
-    *   `recvwindow` = **6553600** (6.25MB). *Efek: Bandwidth naik drastis.*
-3.  **Clash Core**:
-    *   `tcp-concurrent` = **true**. *Efek: Proses TCP paralel.*
-    *   `keep-alive-interval` = **15s**.
-
-> **Note:** Jika terjadi OOM Kill (Aplikasi sering keluar sendiri karena RAM penuh), kembalikan `GOGC` ke 100 dan `recvwindow` ke 327680.
+4.  **Performance**: Standard (`recvwindow=327680`, `GOGC=100`).
 
 ## Checkpoint Teknis
 | Komponen | Status | Detail |
