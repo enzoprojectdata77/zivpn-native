@@ -61,7 +61,7 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                         is ProfilesDesign.Request.Delete ->
                             withProfile { delete(it.profile.uuid) }
                         is ProfilesDesign.Request.Edit ->
-                            design?.showToast(R.string.version_name, ToastDuration.Short) // Disabled
+                            design?.showToast(R.string.disabled, ToastDuration.Short) // Disabled
                         is ProfilesDesign.Request.Active -> {
                             withProfile {
                                 if (it.profile.imported)
@@ -71,7 +71,7 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                             }
                         }
                         is ProfilesDesign.Request.Duplicate -> {
-                            design?.showToast(R.string.version_name, ToastDuration.Short) // Disabled
+                            design?.showToast(R.string.disabled, ToastDuration.Short) // Disabled
                         }
                     }
                 }
