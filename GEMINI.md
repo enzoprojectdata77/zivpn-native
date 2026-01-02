@@ -52,24 +52,46 @@ Setiap modifikasi harus memberikan hasil yang sesuai dengan **Tujuan Utama**, ya
 *   **User Experience**: Migrasi dari modul Magisk ke aplikasi native harus membuat penggunaan VPN menjadi lebih mudah bagi pengguna awam melalui antarmuka (UI).
 *   **Performa**: Mempertahankan keunggulan kecepatan Load Balancer (port 7777) dan Hysteria dari versi Magisk sebelumnya.
 
-## Status Terkini (Checkpoint - 2 Januari 2026 - LITE FINAL)
-**STATUS: OPTIMIZED & PRODUCTION READY**
-ZIVPN Native telah dioptimalkan secara agresif untuk ukuran dan performa. Branch `cleanup-unused-features` adalah versi paling ringan (Lite).
+## Status Terkini (Checkpoint - 2 Januari 2026 - FINAL PLATINUM)
+**STATUS: UNKILLABLE, LITE & PRODUCTION READY**
+ZIVPN Native telah mencapai bentuk finalnya. Dioptimalkan untuk ukuran (Lite) dan ketahanan terhadap background kill (Unkillable).
 
-### Optimasi Lanjut (Lite Version):
-*   **GeoIP Removal**: Database IP dunia (GeoIP/Geosite) dihapus total. Ukuran APK turun drastis (Hemat ~10MB).
-*   **Startup Fix**: Logika inisialisasi asset di `MainApplication` dibersihkan untuk mencegah crash `FileNotFound`.
-*   **Code Cleanup**: Activity/Service tak terpakai tetap dihapus dari Manifest.
+### Fitur "Anti-Kill" (Stability):
+1.  **WakeLock Implemented**: `TunService` memegang `PARTIAL_WAKE_LOCK` selama VPN aktif untuk mencegah CPU deep sleep.
+2.  **Suspend Mode Disabled**: `SuspendModule` dimodifikasi agar **TIDAK PERNAH** mensuspend Clash Core saat layar mati.
+3.  **Process Persistence**: Manifest `TunService` diset `stopWithTask="false"`, mencegah kill saat swipe recent apps.
+4.  **Crash Fixes**: Menangani `InterruptedIOException` saat stop dan `FileNotFoundException` saat startup.
+
+### Optimasi Ukuran (Lite):
+*   **GeoIP Removed**: Database IP dunia dihapus (~10MB saved). Logika startup dibersihkan.
+*   **Code Purge**: Activity/Service tak terpakai dihapus fisik file-nya (NewProfile, Settings, dll).
+*   **Dependencies Trimmed**: Library QR Scanner (`quickie`) dihapus.
 
 ### Ringkasan Teknis Final:
-1.  **Branch**: `cleanup-unused-features` (Lite) | `main` (Standard).
-2.  **Size**: ~20-25MB (arm64-v8a Release).
-3.  **Stability**: Fix InterruptedIOException (Stop Crash) & Database Sync.
+1.  **Branch**: `cleanup-unused-features` (Main Development).
+2.  **Size**: ~20MB (arm64-v8a Release).
+3.  **Permissions**: Ditambahkan `WAKE_LOCK`.
+
+## Performance Tuning (Experimental - 2 Jan 2026)
+Optimasi ini bertujuan untuk meningkatkan throughput dan mengurangi CPU usage, namun meningkatkan penggunaan RAM.
+
+### Parameter Berubah:
+1.  **Go Runtime**:
+    *   `GOGC` = **200** (Default: 100). *Efek: GC lebih jarang, Speed naik, RAM usage naik.*
+    *   `GOMAXPROCS` = **CPU Core Count**. *Efek: Multithreading optimal.*
+2.  **Hysteria (`libuz`)**:
+    *   `recvwindow` = **6553600** (6.25MB). *Efek: Bandwidth naik drastis.*
+3.  **Clash Core**:
+    *   `tcp-concurrent` = **true**. *Efek: Proses TCP paralel.*
+    *   `keep-alive-interval` = **15s**.
+
+> **Note:** Jika terjadi OOM Kill (Aplikasi sering keluar sendiri karena RAM penuh), kembalikan `GOGC` ke 100 dan `recvwindow` ke 327680.
 
 ## Checkpoint Teknis
 | Komponen | Status | Detail |
 | :--- | :--- | :--- |
-| **Core Engine** | **STABLE** | Hysteria + LB running perfectly. |
+| **Background** | **ROCK SOLID** | WakeLock + No Suspend + stopWithTask=false. |
+| **Core Engine** | **ACTIVE** | Hysteria + LB running continuously (Insomnia Mode). |
 | **Asset Size** | **MINIMAL** | No GeoIP files included. |
 | **Startup** | **SMOOTH** | Zero-Config & Auto-Init Profile. |
 

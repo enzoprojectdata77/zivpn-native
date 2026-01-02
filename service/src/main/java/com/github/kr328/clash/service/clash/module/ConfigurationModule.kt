@@ -88,6 +88,9 @@ mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
 ipv6: false
+tcp-concurrent: true
+global-client-fingerprint: chrome
+keep-alive-interval: 15
 
 dns:
   enable: true
