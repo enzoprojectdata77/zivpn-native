@@ -52,21 +52,29 @@ Setiap modifikasi harus memberikan hasil yang sesuai dengan **Tujuan Utama**, ya
 *   **User Experience**: Migrasi dari modul Magisk ke aplikasi native harus membuat penggunaan VPN menjadi lebih mudah bagi pengguna awam melalui antarmuka (UI).
 *   **Performa**: Mempertahankan keunggulan kecepatan Load Balancer (port 7777) dan Hysteria dari versi Magisk sebelumnya.
 
-## Status Terkini (Checkpoint - 1 Januari 2026 - FINAL ZIVPN NATIVE)
-*   **Zero Configuration**: Fitur andalan telah aktif. Pengguna cukup tekan "Start", aplikasi otomatis membuat profil, menyuntikkan proxy, dan menjalankan Hysteria+Libload.
-*   **User Interface**: Menu pengaturan ZIVPN Native (Host, Pass, dll) tersedia dan berfungsi.
-*   **Core Backend**: 8 Instance Hysteria + Load Balancer berjalan mulus di background.
-*   **Observability**: Log native process tersedia di Logcat (`ZIVPN-Core-x`, `ZIVPN-LB`) untuk memudahkan debugging.
-*   **Optimization**: APK hanya 30-50MB (arm64-v8a only).
+## Status Terkini (Checkpoint - 2 Januari 2026 - STABLE & WORKING)
+**STATUS: SUKSES (Core Functionality Verified)**
+Backend aplikasi telah teruji berjalan (Work) pada perangkat target. ZIVPN Native berhasil menjalankan 8 instance Hysteria + 1 Load Balancer di lingkungan Non-Root.
+
+### Kunci Keberhasilan (Do Not Touch / Jangan Diubah Tanpa Alasan Kuat):
+1.  **AndroidManifest**: `android:extractNativeLibs="true"` (Wajib ada agar binary `.so` diekstrak fisik dan executable).
+2.  **Argumen Binary**: `libuz` dijalankan dengan config JSON String (`--config "{...}"`), BUKAN path file.
+3.  **Backend Mode**: Single-Mode (Hardcoded UUID). Mengabaikan profil user dan selalu me-load config ZIVPN yang valid.
+4.  **Database Sync**: Profil dummy didaftarkan ke `ImportedDao` agar UI tidak crash.
+
+### Next Steps: UI Refactoring (Cleaning)
+Tujuan: Mengubah tampilan dari "Clash Client" menjadi "ZIVPN Client".
+- [ ] Hapus menu "Profiles" dari Drawer dan Home.
+- [ ] Hapus menu "Proxies", "Logs", dll yang tidak relevan bagi user awam.
+- [ ] Sederhanakan MainActivity menjadi tombol Start/Stop besar + Status.
+- [ ] Pindahkan "ZIVPN Settings" ke tempat yang lebih mudah dijangkau.
 
 ## Checkpoint Teknis
 | Komponen | Status | Detail |
 | :--- | :--- | :--- |
-| **Auto-Profile** | **Selesai** | `ConfigurationModule` membuat "ZIVPN Default" jika null |
-| **ZIVPN Settings UI** | **Selesai** | Activity & Design baru di folder `app/` |
-| **Dynamic Config** | **Selesai** | `TunService` membaca dari `ZivpnStore` |
-| Hysteria (libuz) | Terintegrasi | 8 Instance (1080-1087), JSON Config via Cache |
-| Load Balancer | Terintegrasi | Port 7777, tunnel ke 8 port lokal |
+| **Core Engine** | **STABLE** | Hysteria + LB running, traffic flowing via Tun0. |
+| **Auto-Config** | **STABLE** | Hardcoded valid config, auto-inject on start. |
+| **UI** | *Cluttered* | Masih tampilan asli Clash, banyak menu tidak perlu. |
 
 ## Catatan Lingkungan
 *   **Platform**: Android (Termux)

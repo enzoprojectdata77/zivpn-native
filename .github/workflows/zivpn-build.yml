@@ -34,15 +34,14 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APK (Alpha Debug)
+      - name: Build APK (Alpha Release)
         run: |
           chmod +x gradlew
-          ./gradlew :app:assembleAlphaDebug --stacktrace
+          ./gradlew :app:assembleAlphaRelease --stacktrace
 
       - name: Upload ZIVPN Native APK
         uses: actions/upload-artifact@v4
         with:
-          name: ZIVPN-Native-Debug-APK
+          name: ZIVPN-Native-Release-APK
           path: |
-            app/build/outputs/apk/alpha/debug/cmfa-*-debug.apk
-            app/build/outputs/apk/alpha/debug/cmfa-*-alpha-debug.apk
+            app/build/outputs/apk/alpha/release/*.apk
