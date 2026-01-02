@@ -14,12 +14,12 @@ class ZivpnStore(context: Context) {
 
     var serverHost: String by store.string(
         key = "zivpn_server_host",
-        defaultValue = "rw2.ngangguro-lab.jp.eu.org"
+        defaultValue = ""
     )
 
     var serverPass: String by store.string(
         key = "zivpn_server_pass",
-        defaultValue = "asd63"
+        defaultValue = ""
     )
 
     var serverObfs: String by store.string(
