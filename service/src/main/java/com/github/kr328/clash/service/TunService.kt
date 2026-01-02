@@ -84,13 +84,21 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
     private fun startProcessLogger(process: Process, tag: String) {
         Thread {
-            process.inputStream.bufferedReader().use { reader ->
-                reader.forEachLine { Log.i("[$tag] $it") }
+            try {
+                process.inputStream.bufferedReader().use { reader ->
+                    reader.forEachLine { Log.i("[$tag] $it") }
+                }
+            } catch (e: java.io.IOException) {
+                // Process destroyed, ignore interruption
             }
         }.start()
         Thread {
-            process.errorStream.bufferedReader().use { reader ->
-                reader.forEachLine { Log.e("[$tag] $it") }
+            try {
+                process.errorStream.bufferedReader().use { reader ->
+                    reader.forEachLine { Log.e("[$tag] $it") }
+                }
+            } catch (e: java.io.IOException) {
+                // Process destroyed, ignore interruption
             }
         }.start()
     }
