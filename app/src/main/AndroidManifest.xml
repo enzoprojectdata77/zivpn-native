@@ -109,25 +109,10 @@
             android:exported="false"
             android:label="@string/profiles" />
         <activity
-            android:name=".NewProfileActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/create_profile" />
-        <activity
-            android:name=".PropertiesActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/profile" />
-        <activity
             android:name=".ProxyActivity"
             android:configChanges="uiMode"
             android:exported="false"
             android:label="@string/proxy" />
-        <activity
-            android:name=".ProvidersActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/providers" />
         <activity
             android:name=".LogsActivity"
             android:configChanges="uiMode"
@@ -139,50 +124,10 @@
             android:exported="false"
             android:label="@string/logcat" />
         <activity
-            android:name=".SettingsActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/settings" />
-        <activity
-            android:name=".NetworkSettingsActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/network" />
-        <activity
-            android:name=".AppSettingsActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/app" />
-        <activity
-            android:name=".OverrideSettingsActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/override" />
-        <activity
-            android:name=".MetaFeatureSettingsActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/meta_features" />
-        <activity
             android:name=".ZivpnSettingsActivity"
             android:configChanges="uiMode"
             android:exported="false"
             android:label="@string/zivpn_settings" />
-        <activity
-            android:name=".AccessControlActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/access_control_packages" />
-        <activity
-            android:name=".HelpActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/help" />
-        <activity
-            android:name=".FilesActivity"
-            android:configChanges="uiMode"
-            android:exported="false"
-            android:label="@string/files" />
 
         <service
             android:name=".LogcatService"
@@ -191,16 +136,6 @@
             android:foregroundServiceType="specialUse">
             <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
             android:value="explanation_for_special_use"/>
-        </service>
-        <service
-            android:name=".TileService"
-            android:exported="true"
-            android:icon="@drawable/ic_logo_service"
-            android:label="@string/launch_name"
-            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
-            <intent-filter>
-                <action android:name="android.service.quicksettings.action.QS_TILE" />
-            </intent-filter>
         </service>
 
         <receiver
