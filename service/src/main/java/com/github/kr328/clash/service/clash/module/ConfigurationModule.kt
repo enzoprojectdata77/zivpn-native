@@ -88,6 +88,8 @@ mode: rule
 log-level: debug
 external-controller: 127.0.0.1:9090
 ipv6: false
+geo-auto-update: false
+geodata-mode: true
 
 dns:
   enable: true
@@ -101,6 +103,10 @@ dns:
   fallback:
     - https://1.0.0.1/dns-query
     - https://8.8.4.4/dns-query
+  fallback-filter:
+    geoip: false
+    ipcidr:
+      - 240.0.0.0/4
 
 proxies:
   - name: "ZIVPN-Core"
