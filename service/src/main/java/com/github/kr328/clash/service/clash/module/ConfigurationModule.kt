@@ -52,7 +52,7 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
                 store.activeProfile = ZIVPN_UUID
                 
                 // SYNC DB: Ensure UI knows about this profile
-                val dao = ImportedDao()
+                val dao = com.github.kr328.clash.service.data.Database.database.openImportedDao()
                 if (!dao.exists(ZIVPN_UUID)) {
                     val zivpnProfile = Imported(
                         uuid = ZIVPN_UUID,
