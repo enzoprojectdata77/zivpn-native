@@ -21,6 +21,7 @@ class MainDesign(context: Context) : Design<MainDesign.Request>(context) {
         OpenProviders,
         OpenLogs,
         OpenSettings,
+        OpenZivpnSettings, // Added for ZIVPN
         OpenHelp,
         OpenAbout,
     }
