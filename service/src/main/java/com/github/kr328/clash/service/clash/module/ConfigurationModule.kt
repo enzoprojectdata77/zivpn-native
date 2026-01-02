@@ -88,30 +88,14 @@ mode: rule
 log-level: info
 external-controller: 127.0.0.1:9090
 ipv6: false
-tcp-concurrent: true
-global-client-fingerprint: chrome
-keep-alive-interval: 15
 
 dns:
   enable: true
   listen: 0.0.0.0:1053
-  enhanced-mode: redir-host
-  ipv6: false
-  prefer-h3: true
+  enhanced-mode: fake-ip
   nameserver:
     - 1.1.1.1
     - 8.8.8.8
-    - https://dns.google/dns-query
-    - https://1.1.1.1/dns-query
-
-sniff:
-  enable: true
-  sniffers:
-    - http
-    - tls
-    - quic
-  force-domain:
-    - "+"
 
 proxies:
   - name: "ZIVPN-CORE-NATIVE"
