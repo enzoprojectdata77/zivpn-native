@@ -41,7 +41,7 @@ class ProfilesActivity : BaseActivity<ProfilesDesign>() {
                 design.requests.onReceive {
                     when (it) {
                         ProfilesDesign.Request.Create ->
-                            design?.showToast(R.string.version_name, ToastDuration.Short) // Disabled
+                            design?.showToast(R.string.disabled, ToastDuration.Short) // Disabled
                         ProfilesDesign.Request.UpdateAll ->
                             withProfile {
                                 try {
