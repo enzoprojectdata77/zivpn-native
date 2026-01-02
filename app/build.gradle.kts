@@ -26,6 +26,10 @@ dependencies {
     implementation(libs.google.material)
     implementation(libs.quickie.bundled)
     implementation(libs.androidx.activity.ktx)
+    
+    // Fix: Room dependency for Database access in MainActivity
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
 }
 
 tasks.getByName("clean", type = Delete::class) {
