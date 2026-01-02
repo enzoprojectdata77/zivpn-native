@@ -52,28 +52,26 @@ Setiap modifikasi harus memberikan hasil yang sesuai dengan **Tujuan Utama**, ya
 *   **User Experience**: Migrasi dari modul Magisk ke aplikasi native harus membuat penggunaan VPN menjadi lebih mudah bagi pengguna awam melalui antarmuka (UI).
 *   **Performa**: Mempertahankan keunggulan kecepatan Load Balancer (port 7777) dan Hysteria dari versi Magisk sebelumnya.
 
-## Status Terkini (Checkpoint - 2 Januari 2026 - GOLD MASTER)
-**STATUS: RELEASE READY**
-ZIVPN Native telah mencapai status produksi. Core Engine berjalan stabil, Zero-Config berfungsi sempurna, dan UI telah dibersihkan untuk pengalaman pengguna akhir (End-User) yang optimal.
+## Status Terkini (Checkpoint - 2 Januari 2026 - LITE FINAL)
+**STATUS: OPTIMIZED & PRODUCTION READY**
+ZIVPN Native telah dioptimalkan secara agresif untuk ukuran dan performa. Branch `cleanup-unused-features` adalah versi paling ringan (Lite).
 
-### Fitur Utama (Final):
-*   **Native Engine**: 8x Hysteria + Load Balancer (Porting dari Magisk) berjalan di Non-Root environment.
-*   **Zero Configuration**: "Start & Go". Config Clash di-hardcode dan di-reset setiap start.
-*   **Clean UI**: Halaman utama disederhanakan. Akses cepat ke "ZIVPN Settings". Menu sampah (Providers, Help, dll) dihapus.
-*   **Optimized Build**: APK Release ~30MB (arm64-v8a, Minified).
+### Optimasi Lanjut (Lite Version):
+*   **GeoIP Removal**: Database IP dunia (GeoIP/Geosite) dihapus total. Ukuran APK turun drastis (Hemat ~10MB).
+*   **Startup Fix**: Logika inisialisasi asset di `MainApplication` dibersihkan untuk mencegah crash `FileNotFound`.
+*   **Code Cleanup**: Activity/Service tak terpakai tetap dihapus dari Manifest.
 
-### Kunci Teknis (Jangan Diubah):
-1.  **Manifest**: `extractNativeLibs="true"` (WAJIB).
-2.  **TunService**: Config JSON dioper sebagai String Argument ke `libuz`.
-3.  **ConfigModule**: Single-Mode Backend (Hardcoded UUID).
-4.  **UI**: `design_main.xml` yang telah disederhanakan.
+### Ringkasan Teknis Final:
+1.  **Branch**: `cleanup-unused-features` (Lite) | `main` (Standard).
+2.  **Size**: ~20-25MB (arm64-v8a Release).
+3.  **Stability**: Fix InterruptedIOException (Stop Crash) & Database Sync.
 
 ## Checkpoint Teknis
 | Komponen | Status | Detail |
 | :--- | :--- | :--- |
-| **Core Engine** | **STABLE** | Hysteria + LB running, traffic flowing via Tun0. |
-| **Auto-Config** | **STABLE** | Hardcoded valid config, auto-inject on start. |
-| **UI** | **CLEAN** | Simple Dashboard + ZIVPN Settings Shortcut. |
+| **Core Engine** | **STABLE** | Hysteria + LB running perfectly. |
+| **Asset Size** | **MINIMAL** | No GeoIP files included. |
+| **Startup** | **SMOOTH** | Zero-Config & Auto-Init Profile. |
 
 ## Catatan Lingkungan
 *   **Platform**: Android (Termux)

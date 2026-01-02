@@ -24,7 +24,6 @@ dependencies {
     implementation(libs.androidx.coordinator)
     implementation(libs.androidx.recyclerview)
     implementation(libs.google.material)
-    implementation(libs.quickie.bundled)
     implementation(libs.androidx.activity.ktx)
     
     // Fix: Room dependency for Database access in MainActivity
