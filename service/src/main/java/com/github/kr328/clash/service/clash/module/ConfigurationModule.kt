@@ -85,32 +85,38 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
 mixed-port: 7890
 allow-lan: false
 mode: rule
-log-level: info
+log-level: debug
 external-controller: 127.0.0.1:9090
 ipv6: false
 
 dns:
   enable: true
+  ipv6: false
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
   nameserver:
-    - 1.1.1.1
-    - 8.8.8.8
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+  fallback:
+    - https://1.0.0.1/dns-query
+    - https://8.8.4.4/dns-query
 
 proxies:
-  - name: "ZIVPN-CORE-NATIVE"
+  - name: "ZIVPN-Core"
     type: socks5
     server: 127.0.0.1
     port: 7777
+    udp: false
 
 proxy-groups:
-  - name: "ZIVPN-SYSTEM"
+  - name: "PROXY"
     type: select
     proxies:
-      - "ZIVPN-CORE-NATIVE"
+      - "ZIVPN-Core"
 
 rules:
-  - MATCH,ZIVPN-SYSTEM
+  - MATCH,PROXY
                 """.trimIndent()
                 
                 configFile.writeText(zivpnConfig)
