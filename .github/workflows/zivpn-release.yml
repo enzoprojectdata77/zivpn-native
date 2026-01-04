@@ -47,18 +47,12 @@ jobs:
           chmod +x gradlew
           ./gradlew :app:assembleAlphaRelease --stacktrace
 
-      - name: List Files
-        run: |
-          find app/build/outputs/apk/ -name "*.apk"
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
-            app/build/outputs/apk/alpha/release/cmfa-*-alpha-release.apk
-            app/build/outputs/apk/alpha/release/cmfa-*-universal-alpha-release.apk
-            app/build/outputs/apk/alpha/release/cmfa-*-arm64-v8a-alpha-release.apk
+            app/build/outputs/apk/alpha/release/cmfa-*-release.apk
           name: ZIVPN Native Release ${{ github.ref_name }}
           draft: false
           prerelease: false
