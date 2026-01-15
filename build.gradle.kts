@@ -60,15 +60,15 @@ subprojects {
             minSdk = 21
             targetSdk = 35
 
-            versionName = "2.11.22-zivpn-stable"
-            versionCode = 211022
+            versionName = "2.11.25-zivpn-turbo"
+            versionCode = 211025
 
             resValue("string", "release_name", "v$versionName")
             resValue("integer", "release_code", "$versionCode")
 
             externalNativeBuild {
                 cmake {
-                    abiFilters("arm64-v8a")
+                    abiFilters("arm64-v8a", "armeabi-v7a")
                 }
             }
 
@@ -198,9 +198,9 @@ subprojects {
             splits {
                 abi {
                     isEnable = true
-                    isUniversalApk = false
+                    isUniversalApk = true
                     reset()
-                    include("arm64-v8a")
+                    include("arm64-v8a", "armeabi-v7a")
                 }
             }
         }

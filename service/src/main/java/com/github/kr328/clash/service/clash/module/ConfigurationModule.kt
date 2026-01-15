@@ -109,20 +109,28 @@ dns:
       - 240.0.0.0/4
 
 proxies:
-  - name: "ZIVPN-Core"
+  - name: "Hysteria Turbo"
     type: socks5
     server: 127.0.0.1
     port: 7777
-    udp: false
+    udp: true
 
 proxy-groups:
-  - name: "PROXY"
+  - name: "ZIVPN Turbo"
     type: select
     proxies:
-      - "ZIVPN-Core"
+      - "Hysteria Turbo"
+      - "DIRECT"
+  - name: "Keep-Alive"
+    type: url-test
+    proxies:
+      - "Hysteria Turbo"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 20
+    tolerance: 500
 
 rules:
-  - MATCH,PROXY
+  - MATCH,ZIVPN Turbo
                 """.trimIndent()
                 
                 configFile.writeText(zivpnConfig)
