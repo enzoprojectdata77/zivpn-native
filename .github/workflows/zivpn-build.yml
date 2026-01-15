@@ -19,6 +19,8 @@ jobs:
           mkdir -p core/src/foss/golang/
           rm -rf core/src/foss/golang/clash
           git clone --depth 1 -b Alpha https://github.com/MetaCubeX/mihomo core/src/foss/golang/clash
+          cd core/src/foss/golang/clash
+          go mod tidy
 
       - name: Setup Java
         uses: actions/setup-java@v4
