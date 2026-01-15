@@ -145,8 +145,25 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         val binDir = cacheDir.resolve("bin")
         binDir.mkdirs()
 
-        val libUz = "$nativeDir/libuz_core.so"
-        val libLoad = "$nativeDir/libload_core.so"
+        // Helper to copy and make executable
+        fun prepareBinary(name: String): String {
+            val source = java.io.File(nativeDir, name)
+            val dest = java.io.File(binDir, name)
+            
+            try {
+                if (!dest.exists() || dest.length() != source.length()) {
+                    source.copyTo(dest, overwrite = true)
+                }
+                dest.setExecutable(true)
+                Runtime.getRuntime().exec("chmod 755 ${dest.absolutePath}").waitFor()
+            } catch (e: Exception) {
+                Log.e("ZIVPN: Failed to prepare binary $name: ${e.message}", e)
+            }
+            return dest.absolutePath
+        }
+
+        val libUz = prepareBinary("libuz_core.so")
+        val libLoad = prepareBinary("libload_core.so")
         
         val zivpnStore = com.github.kr328.clash.service.store.ZivpnStore(this)
         val serverHost = zivpnStore.serverHost
