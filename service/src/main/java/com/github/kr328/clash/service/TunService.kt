@@ -140,10 +140,27 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         supervisorJobs.add(job)
     }
 
+    private fun logToFile(msg: String) {
+        try {
+            val logFile = java.io.File(filesDir, "zivpn_boot.log")
+            logFile.appendText("${java.util.Date()}: $msg\n")
+        } catch (e: Exception) {
+            Log.e("ZIVPN", "Failed to write log", e)
+        }
+    }
+
     private fun startZivpnCores() {
+        logToFile("Starting ZIVPN Cores...")
         val nativeDir = applicationInfo.nativeLibraryDir
         val binDir = cacheDir.resolve("bin")
-        binDir.mkdirs()
+        
+        try {
+            if (!binDir.exists()) binDir.mkdirs()
+            logToFile("Bin dir created at $binDir")
+        } catch (e: Exception) {
+            logToFile("Failed to create bin dir: ${e.message}")
+            return
+        }
 
         // Helper to copy and make executable
         fun prepareBinary(name: String): String {
@@ -153,10 +170,12 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             try {
                 if (!dest.exists() || dest.length() != source.length()) {
                     source.copyTo(dest, overwrite = true)
+                    logToFile("Copied $name")
                 }
                 dest.setExecutable(true)
                 Runtime.getRuntime().exec("chmod 755 ${dest.absolutePath}").waitFor()
             } catch (e: Exception) {
+                logToFile("Failed to prepare binary $name: ${e.message}")
                 Log.e("ZIVPN: Failed to prepare binary $name: ${e.message}", e)
             }
             return dest.absolutePath
@@ -170,11 +189,10 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         val pass = zivpnStore.serverPass
         val obfs = zivpnStore.serverObfs
         
-        // MATCH MAGISK SCRIPT: 4 Instances (1080-1083)
+        logToFile("Config: Host=$serverHost Obfs=$obfs")
+
         val ports = listOf(1080, 1081, 1082, 1083)
         val ranges = zivpnStore.portRanges.split(",").filter { it.isNotBlank() }.take(4)
-
-        Log.d("ZIVPN: Initializing 4 Hysteria Cores + Load Balancer (Supervisor Mode)")
 
         val env = mapOf("LD_LIBRARY_PATH" to nativeDir)
 
@@ -184,16 +202,22 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             val port = ports[i]
             val range = if (i < ranges.size) ranges[i] else zivpnStore.portRanges // Fallback
             
+            // WRITE CONFIG TO FILE
             val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680}"""
-            val command = listOf(libUz, "-s", obfs, "--config", configContent)
+            val configFile = java.io.File(binDir, "config_$i.json")
+            configFile.writeText(configContent)
             
+            val command = listOf(libUz, "-s", obfs, "--config", configFile.absolutePath)
+            
+            logToFile("Starting Core-$i on port $port")
             startDaemon("ZIVPN-Core-$i", command, env)
             tunnels.add("127.0.0.1:$port")
         }
 
-        // 2. Start Load Balancer (Dependent on ports only, not process state)
+        // 2. Start Load Balancer
         val lbArgs = mutableListOf(libLoad, "-lport", "7777", "-tunnel")
         lbArgs.addAll(tunnels)
+        logToFile("Starting LoadBalancer on 7777")
         startDaemon("ZIVPN-LB", lbArgs, env)
     }
 
