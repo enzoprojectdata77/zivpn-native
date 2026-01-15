@@ -110,7 +110,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             while (isActive && StatusProvider.serviceRunning) {
                 var process: Process? = null
                 try {
-                    Log.i("ZIVPN", "Starting $name...")
+                    Log.i("ZIVPN: Starting $name...")
                     val pb = ProcessBuilder(command)
                     pb.environment().putAll(env)
                     process = pb.start()
@@ -129,10 +129,10 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
                     
                     if (!StatusProvider.serviceRunning) break
 
-                    Log.w("ZIVPN", "$name exited with code $exitCode. Restarting in 3s...")
+                    Log.w("ZIVPN: $name exited with code $exitCode. Restarting in 3s...")
                     delay(3000)
                 } catch (e: Exception) {
-                    Log.e("ZIVPN", "Error running $name", e)
+                    Log.e("ZIVPN: Error running $name", e)
                     process?.destroy()
                     delay(5000)
                 }
@@ -159,7 +159,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         
         val env = mapOf("LD_LIBRARY_PATH" to nativeDir)
 
-        Log.d("ZIVPN", "Initializing Keep-Alive for Hysteria Cores...")
+        Log.d("ZIVPN: Initializing Keep-Alive for Hysteria Cores...")
 
         // 1. Start 4 Hysteria Cores (Monitored)
         val tunnels = mutableListOf<String>()
@@ -188,7 +188,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             coreProcesses.forEach { it.destroy() }
             coreProcesses.clear()
         }
-        Log.i("ZIVPN", "All cores stopped")
+        Log.i("ZIVPN: All cores stopped")
     }
 
     override fun onCreate() {
