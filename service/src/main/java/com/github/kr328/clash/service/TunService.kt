@@ -81,6 +81,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         }
     }
 
+    private val supervisorJobs = mutableListOf<Job>()
     private val coreProcesses = mutableListOf<Process>()
 
     private fun startProcessLogger(process: Process, tag: String) {
@@ -90,7 +91,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
                     reader.forEachLine { Log.i("[$tag] $it") }
                 }
             } catch (e: java.io.IOException) {
-                // Process destroyed, ignore interruption
+                // Process destroyed
             }
         }.start()
         Thread {
@@ -99,9 +100,45 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
                     reader.forEachLine { Log.e("[$tag] $it") }
                 }
             } catch (e: java.io.IOException) {
-                // Process destroyed, ignore interruption
+                // Process destroyed
             }
         }.start()
+    }
+
+    private fun startDaemon(name: String, command: List<String>, env: Map<String, String>) {
+        val job = launch(Dispatchers.IO) {
+            while (isActive && StatusProvider.serviceRunning) {
+                var process: Process? = null
+                try {
+                    Log.i("ZIVPN", "Starting $name...")
+                    val pb = ProcessBuilder(command)
+                    pb.environment().putAll(env)
+                    process = pb.start()
+                    
+                    synchronized(coreProcesses) {
+                        coreProcesses.add(process)
+                    }
+                    
+                    startProcessLogger(process, name)
+                    
+                    val exitCode = process.waitFor()
+                    
+                    synchronized(coreProcesses) {
+                        coreProcesses.remove(process)
+                    }
+                    
+                    if (!StatusProvider.serviceRunning) break
+
+                    Log.w("ZIVPN", "$name exited with code $exitCode. Restarting in 3s...")
+                    delay(3000)
+                } catch (e: Exception) {
+                    Log.e("ZIVPN", "Error running $name", e)
+                    process?.destroy()
+                    delay(5000)
+                }
+            }
+        }
+        supervisorJobs.add(job)
     }
 
     private fun startZivpnCores() {
@@ -117,48 +154,41 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         val pass = zivpnStore.serverPass
         val obfs = zivpnStore.serverObfs
         
-        // MATCH MAGISK SCRIPT: 4 Instances (1080-1083)
         val ports = listOf(1080, 1081, 1082, 1083)
         val ranges = zivpnStore.portRanges.split(",").filter { it.isNotBlank() }.take(4)
+        
+        val env = mapOf("LD_LIBRARY_PATH" to nativeDir)
 
-        Log.d("ZIVPN: Starting 4 Hysteria Cores (Magisk Style) with Host: $serverHost")
+        Log.d("ZIVPN", "Initializing Keep-Alive for Hysteria Cores...")
 
-        try {
-            val tunnels = mutableListOf<String>()
+        // 1. Start 4 Hysteria Cores (Monitored)
+        val tunnels = mutableListOf<String>()
+        for (i in 0 until 4) {
+            val port = ports[i]
+            val range = if (i < ranges.size) ranges[i] else zivpnStore.portRanges 
             
-            for (i in 0 until 4) {
-                val port = ports[i]
-                val range = if (i < ranges.size) ranges[i] else zivpnStore.portRanges // Fallback to full range
-                
-                val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680}"""
-                
-                val pb = ProcessBuilder(libUz, "-s", obfs, "--config", configContent)
-                pb.environment()["LD_LIBRARY_PATH"] = nativeDir
-                val process = pb.start()
-                coreProcesses.add(process)
-                startProcessLogger(process, "ZIVPN-Core-$i")
-                
-                tunnels.add("127.0.0.1:$port")
-            }
+            val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680}"""
+            val command = listOf(libUz, "-s", obfs, "--config", configContent)
             
-            val lbArgs = mutableListOf(libLoad, "-lport", "7777", "-tunnel")
-            lbArgs.addAll(tunnels)
-            val lbPb = ProcessBuilder(lbArgs)
-            lbPb.environment()["LD_LIBRARY_PATH"] = nativeDir
-            val lbProcess = lbPb.start()
-            coreProcesses.add(lbProcess)
-            startProcessLogger(lbProcess, "ZIVPN-LB")
-            
-            Log.i("ZIVPN: ZIVPN Native Cores (4 instances + LB) started successfully")
-        } catch (e: Exception) {
-            Log.e("ZIVPN: Failed to start ZIVPN Cores: ${e.message}", e)
+            startDaemon("ZIVPN-Core-$i", command, env)
+            tunnels.add("127.0.0.1:$port")
         }
+        
+        // 2. Start Load Balancer (Monitored)
+        val lbArgs = mutableListOf(libLoad, "-lport", "7777", "-tunnel")
+        lbArgs.addAll(tunnels)
+        startDaemon("ZIVPN-LB", lbArgs, env)
     }
 
     private fun stopZivpnCores() {
-        coreProcesses.forEach { it.destroy() }
-        coreProcesses.clear()
-        Log.i("ZIVPN Native Cores stopped")
+        supervisorJobs.forEach { it.cancel() }
+        supervisorJobs.clear()
+        
+        synchronized(coreProcesses) {
+            coreProcesses.forEach { it.destroy() }
+            coreProcesses.clear()
+        }
+        Log.i("ZIVPN", "All cores stopped")
     }
 
     override fun onCreate() {
