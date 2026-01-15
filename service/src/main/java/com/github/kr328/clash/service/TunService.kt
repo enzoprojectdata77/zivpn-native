@@ -145,7 +145,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             val logFile = java.io.File(filesDir, "zivpn_boot.log")
             logFile.appendText("${java.util.Date()}: $msg\n")
         } catch (e: Exception) {
-            Log.e("ZIVPN", "Failed to write log", e)
+            Log.e("ZIVPN: Failed to write log", e)
         }
     }
 
