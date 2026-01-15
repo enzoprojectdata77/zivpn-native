@@ -150,39 +150,11 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
     }
 
     private fun startZivpnCores() {
-        logToFile("Starting ZIVPN Cores...")
+        logToFile("Starting ZIVPN Cores (Legacy Mode)...")
         val nativeDir = applicationInfo.nativeLibraryDir
-        val binDir = cacheDir.resolve("bin")
         
-        try {
-            if (!binDir.exists()) binDir.mkdirs()
-            logToFile("Bin dir created at $binDir")
-        } catch (e: Exception) {
-            logToFile("Failed to create bin dir: ${e.message}")
-            return
-        }
-
-        // Helper to copy and make executable
-        fun prepareBinary(name: String): String {
-            val source = java.io.File(nativeDir, name)
-            val dest = java.io.File(binDir, name)
-            
-            try {
-                if (!dest.exists() || dest.length() != source.length()) {
-                    source.copyTo(dest, overwrite = true)
-                    logToFile("Copied $name")
-                }
-                dest.setExecutable(true)
-                Runtime.getRuntime().exec("chmod 755 ${dest.absolutePath}").waitFor()
-            } catch (e: Exception) {
-                logToFile("Failed to prepare binary $name: ${e.message}")
-                Log.e("ZIVPN: Failed to prepare binary $name: ${e.message}", e)
-            }
-            return dest.absolutePath
-        }
-
-        val libUz = prepareBinary("libuz_core.so")
-        val libLoad = prepareBinary("libload_core.so")
+        val libUz = "$nativeDir/libuz_core.so"
+        val libLoad = "$nativeDir/libload_core.so"
         
         val zivpnStore = com.github.kr328.clash.service.store.ZivpnStore(this)
         val serverHost = zivpnStore.serverHost
@@ -202,12 +174,8 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             val port = ports[i]
             val range = if (i < ranges.size) ranges[i] else zivpnStore.portRanges // Fallback
             
-            // WRITE CONFIG TO FILE
             val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680}"""
-            val configFile = java.io.File(binDir, "config_$i.json")
-            configFile.writeText(configContent)
-            
-            val command = listOf(libUz, "-s", obfs, "--config", configFile.absolutePath)
+            val command = listOf(libUz, "-s", obfs, "--config", configContent)
             
             logToFile("Starting Core-$i on port $port")
             startDaemon("ZIVPN-Core-$i", command, env)
