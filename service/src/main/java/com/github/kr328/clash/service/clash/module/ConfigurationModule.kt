@@ -33,7 +33,7 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
 
         // --- ZIVPN FORCE INIT START ---
         try {
-            Log.i("ConfigurationModule", "Initializing ZIVPN Turbo Profile...")
+            Log.i("ConfigurationModule: Initializing ZIVPN Turbo Profile...")
             
             // 1. Force Active Profile UUID
             store.activeProfile = ZIVPN_UUID
@@ -54,6 +54,7 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
                     createdAt = System.currentTimeMillis()
                 )
                 dao.insert(zivpnProfile)
+                Log.i("ConfigurationModule: Registered ZIVPN profile to DB")
             }
 
             // 3. Prepare Directory & Write Config
@@ -121,7 +122,7 @@ rules:
             service.sendProfileLoaded(ZIVPN_UUID)
             
         } catch (e: Exception) {
-            Log.e("ConfigurationModule", "Failed to initialize ZIVPN config", e)
+            Log.e("ConfigurationModule: Failed to initialize ZIVPN config", e)
             return enqueueEvent(LoadException(e.message ?: "Init Failed"))
         }
         // --- ZIVPN FORCE INIT END ---
@@ -141,7 +142,7 @@ rules:
                         Clash.load(profileDir).await()
                         service.sendProfileLoaded(ZIVPN_UUID)
                     } catch (e: Exception) {
-                        Log.e("ConfigurationModule", "Reload failed", e)
+                        Log.e("ConfigurationModule: Reload failed", e)
                     }
                 }
             }
