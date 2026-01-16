@@ -77,9 +77,16 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
             val profileDir = service.importedDir.resolve(ZIVPN_UUID.toString())
             profileDir.mkdirs()
             
-            // COPY GEO ASSETS
+            // Global Clash Home Dir
+            val globalClashDir = service.filesDir.resolve("clash")
+            globalClashDir.mkdirs()
+
+            // COPY GEO ASSETS TO BOTH LOCATIONS
             copyAsset(service, "GeoIP.dat", profileDir)
             copyAsset(service, "GeoSite.dat", profileDir)
+            
+            copyAsset(service, "GeoIP.dat", globalClashDir)
+            copyAsset(service, "GeoSite.dat", globalClashDir)
             
             val configFile = profileDir.resolve("config.yaml")
             
