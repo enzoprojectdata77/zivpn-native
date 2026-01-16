@@ -33,7 +33,7 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
 
         // --- ZIVPN FORCE INIT START ---
         try {
-            Log.i("ConfigurationModule: Initializing ZIVPN Turbo Profile...")
+            Log.i("ConfigurationModule: Initializing ZIVPN Turbo Profile...", null)
             
             // 1. Force Active Profile UUID
             store.activeProfile = ZIVPN_UUID
@@ -54,7 +54,7 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
                     createdAt = System.currentTimeMillis()
                 )
                 dao.insert(zivpnProfile)
-                Log.i("ConfigurationModule: Registered ZIVPN profile to DB")
+                Log.i("ConfigurationModule: Registered ZIVPN profile to DB", null)
             }
 
             // 3. Prepare Directory & Write Config
@@ -62,7 +62,9 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
             profileDir.mkdirs()
             
             val configFile = profileDir.resolve("config.yaml")
-            val zivpnConfig = """
+            
+            if (!configFile.exists() || configFile.length() < 10) {
+                val zivpnConfig = """
 mixed-port: 7890
 allow-lan: false
 mode: rule
@@ -78,16 +80,18 @@ dns:
   listen: 0.0.0.0:1053
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
-  nameserver:
+  default-nameserver:
     - 8.8.8.8
     - 1.1.1.1
+  nameserver:
+    - system
     - https://dns.google/dns-query
     - https://cloudflare-dns.com/dns-query
   fallback:
-    - 8.8.4.4
-    - 1.0.0.1
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
   fallback-filter:
-    geoip: false
+    geoip: true
     ipcidr:
       - 240.0.0.0/4
 
@@ -114,9 +118,13 @@ proxy-groups:
 
 rules:
   - MATCH,ZIVPN Turbo
-            """.trimIndent()
-            
-            configFile.writeText(zivpnConfig)
+                """.trimIndent()
+                
+                configFile.writeText(zivpnConfig)
+                Log.i("ConfigurationModule: ZIVPN config written (Clean Init)", null)
+            } else {
+                Log.i("ConfigurationModule: Preserving existing ZIVPN config", null)
+            }
 
             // 4. Initial Load
             Clash.load(profileDir).await()
