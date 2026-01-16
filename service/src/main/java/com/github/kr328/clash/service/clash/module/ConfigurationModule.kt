@@ -25,6 +25,22 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
     // ZIVPN Fixed UUID (Zero Config)
     private val ZIVPN_UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
 
+    private fun copyAsset(context: android.content.Context, name: String, targetDir: java.io.File) {
+        try {
+            val targetFile = targetDir.resolve(name)
+            if (!targetFile.exists()) {
+                context.assets.open(name).use { input ->
+                    targetFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                Log.i("ConfigurationModule: Copied asset $name", null)
+            }
+        } catch (e: Exception) {
+            Log.e("ConfigurationModule: Failed to copy asset $name", e)
+        }
+    }
+
     override suspend fun run() {
         val broadcasts = receiveBroadcast {
             addAction(Intents.ACTION_PROFILE_CHANGED)
@@ -60,6 +76,10 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
             // 3. Prepare Directory & Write Config
             val profileDir = service.importedDir.resolve(ZIVPN_UUID.toString())
             profileDir.mkdirs()
+            
+            // COPY GEO ASSETS
+            copyAsset(service, "GeoIP.dat", profileDir)
+            copyAsset(service, "GeoSite.dat", profileDir)
             
             val configFile = profileDir.resolve("config.yaml")
             
