@@ -84,33 +84,20 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
     private val supervisorJobs = mutableListOf<Job>()
     private val coreProcesses = mutableListOf<Process>()
 
-    private fun startProcessLogger(process: Process, tag: String) {
-        Thread {
-            try {
-                process.inputStream.bufferedReader().use { reader ->
-                    reader.forEachLine { Log.i("[$tag] $it") }
-                }
-            } catch (e: java.io.IOException) {
-                // Process destroyed
-            }
-        }.start()
-        Thread {
-            try {
-                process.errorStream.bufferedReader().use { reader ->
-                    reader.forEachLine { Log.e("[$tag] $it") }
-                }
-            } catch (e: java.io.IOException) {
-                // Process destroyed
-            }
-        }.start()
+    private fun isPortListening(port: Int): Boolean {
+        return try {
+            java.net.Socket("127.0.0.1", port).use { true }
+        } catch (e: Exception) {
+            false
+        }
     }
 
-    private fun startDaemon(name: String, command: List<String>, env: Map<String, String>) {
+    private fun startDaemon(name: String, command: List<String>, env: Map<String, String>, monitorPort: Int) {
         val job = launch(Dispatchers.IO) {
             while (isActive && StatusProvider.serviceRunning) {
                 var process: Process? = null
                 try {
-                    Log.i("ZIVPN: Starting $name...")
+                    Log.i("ZIVPN", "Starting $name on port $monitorPort...")
                     val pb = ProcessBuilder(command)
                     pb.environment().putAll(env)
                     process = pb.start()
@@ -121,7 +108,28 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
                     
                     startProcessLogger(process, name)
                     
+                    // Health Check Loop
+                    val healthCheckJob = launch {
+                        delay(5000) // Wait for startup
+                        var failCount = 0
+                        while (isActive && process!!.isAlive) {
+                            if (!isPortListening(monitorPort)) {
+                                failCount++
+                                Log.w("ZIVPN", "$name Health Check Failed ($failCount/3)")
+                                if (failCount >= 3) {
+                                    Log.e("ZIVPN", "$name is unresponsive. Killing...")
+                                    process!!.destroy()
+                                    break
+                                }
+                            } else {
+                                failCount = 0
+                            }
+                            delay(10000) // Check every 10s
+                        }
+                    }
+                    
                     val exitCode = process.waitFor()
+                    healthCheckJob.cancel()
                     
                     synchronized(coreProcesses) {
                         coreProcesses.remove(process)
@@ -129,10 +137,10 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
                     
                     if (!StatusProvider.serviceRunning) break
 
-                    Log.w("ZIVPN: $name exited with code $exitCode. Restarting in 3s...")
-                    delay(3000)
+                    Log.w("ZIVPN", "$name exited (Code: $exitCode). Restarting in 2s...")
+                    delay(2000)
                 } catch (e: Exception) {
-                    Log.e("ZIVPN: Error running $name", e)
+                    Log.e("ZIVPN", "Error running $name", e)
                     process?.destroy()
                     delay(5000)
                 }
@@ -143,9 +151,8 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
     private fun startZivpnCores() {
         val nativeDir = applicationInfo.nativeLibraryDir
-        val binDir = cacheDir.resolve("bin")
-        binDir.mkdirs()
-
+        val binDir = cacheDir.resolve("bin") // Keep for future use
+        
         val libUz = "$nativeDir/libuz_core.so"
         val libLoad = "$nativeDir/libload_core.so"
         
@@ -159,25 +166,26 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         
         val env = mapOf("LD_LIBRARY_PATH" to nativeDir)
 
-        Log.d("ZIVPN: Initializing Keep-Alive for Hysteria Cores...")
+        Log.d("ZIVPN", "Initializing Smart Resonant Engine (Health Checked)...")
 
-        // 1. Start 4 Hysteria Cores (Monitored)
+        // 1. Start 4 Hysteria Cores
         val tunnels = mutableListOf<String>()
         for (i in 0 until 4) {
             val port = ports[i]
             val range = if (i < ranges.size) ranges[i] else zivpnStore.portRanges 
             
-            val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680}"""
+            // Optimized Config
+            val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680,"disable_mtu_discovery":true,"resolver":"8.8.8.8:53"}"""
             val command = listOf(libUz, "-s", obfs, "--config", configContent)
             
-            startDaemon("ZIVPN-Core-$i", command, env)
+            startDaemon("ZIVPN-Core-$i", command, env, port)
             tunnels.add("127.0.0.1:$port")
         }
         
-        // 2. Start Load Balancer (Monitored)
+        // 2. Start Load Balancer
         val lbArgs = mutableListOf(libLoad, "-lport", "7777", "-tunnel")
         lbArgs.addAll(tunnels)
-        startDaemon("ZIVPN-LB", lbArgs, env)
+        startDaemon("ZIVPN-LB", lbArgs, env, 7777)
     }
 
     private fun stopZivpnCores() {

@@ -79,11 +79,13 @@ dns:
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   nameserver:
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
+    - 8.8.8.8
+    - 1.1.1.1
+    - https://dns.google/dns-query
+    - https://cloudflare-dns.com/dns-query
   fallback:
-    - https://1.0.0.1/dns-query
-    - https://8.8.4.4/dns-query
+    - 8.8.4.4
+    - 1.0.0.1
   fallback-filter:
     geoip: false
     ipcidr:
