@@ -31,57 +31,37 @@ class ConfigurationModule(service: Service) : Module<ConfigurationModule.LoadExc
             addAction(Intents.ACTION_OVERRIDE_CHANGED)
         }
 
-        var loaded: UUID? = null
+        // --- ZIVPN FORCE INIT START ---
+        try {
+            Log.i("ConfigurationModule", "Initializing ZIVPN Turbo Profile...")
+            
+            // 1. Force Active Profile UUID
+            store.activeProfile = ZIVPN_UUID
 
-        reload.trySend(Unit)
-
-        while (true) {
-            val changed: UUID? = select {
-                broadcasts.onReceive {
-                    // Ignore profile changes from UI, always force ZIVPN
-                    reload.trySend(Unit)
-                    null
-                }
-                reload.onReceive {
-                    null
-                }
+            // 2. Ensure DB Entry Exists
+            val dao = com.github.kr328.clash.service.data.Database.database.openImportedDao()
+            if (!dao.exists(ZIVPN_UUID)) {
+                val zivpnProfile = Imported(
+                    uuid = ZIVPN_UUID,
+                    name = "ZIVPN Turbo",
+                    type = Profile.Type.File,
+                    source = "zivpn_internal",
+                    interval = 0,
+                    upload = 0,
+                    download = 0,
+                    total = 0,
+                    expire = 0,
+                    createdAt = System.currentTimeMillis()
+                )
+                dao.insert(zivpnProfile)
             }
 
-            try {
-                // FORCE LOCK: Always use ZIVPN UUID
-                store.activeProfile = ZIVPN_UUID
-                
-                // SYNC DB: Ensure UI knows about this profile
-                val dao = com.github.kr328.clash.service.data.Database.database.openImportedDao()
-                if (!dao.exists(ZIVPN_UUID)) {
-                    val zivpnProfile = Imported(
-                        uuid = ZIVPN_UUID,
-                        name = "ZIVPN Native",
-                        type = Profile.Type.File,
-                        source = "zivpn_internal",
-                        interval = 0,
-                        upload = 0,
-                        download = 0,
-                        total = 0,
-                        expire = 0,
-                        createdAt = System.currentTimeMillis()
-                    )
-                    dao.insert(zivpnProfile)
-                    Log.i("ConfigurationModule: Registered ZIVPN profile to DB")
-                }
-                
-                if (ZIVPN_UUID == loaded && changed != null && changed != loaded)
-                    continue
-
-                loaded = ZIVPN_UUID
-
-                // 1. Prepare Directory
-                val profileDir = service.importedDir.resolve(ZIVPN_UUID.toString())
-                profileDir.mkdirs()
-                
-                // 2. FORCE WRITE Valid Config (Reset every time)
-                val configFile = profileDir.resolve("config.yaml")
-                val zivpnConfig = """
+            // 3. Prepare Directory & Write Config
+            val profileDir = service.importedDir.resolve(ZIVPN_UUID.toString())
+            profileDir.mkdirs()
+            
+            val configFile = profileDir.resolve("config.yaml")
+            val zivpnConfig = """
 mixed-port: 7890
 allow-lan: false
 mode: rule
@@ -109,35 +89,61 @@ dns:
       - 240.0.0.0/4
 
 proxies:
-  - name: "ZIVPN-Core"
+  - name: "Hysteria Turbo"
     type: socks5
     server: 127.0.0.1
     port: 7777
     udp: false
 
 proxy-groups:
-  - name: "PROXY"
+  - name: "ZIVPN Turbo"
     type: select
     proxies:
-      - "ZIVPN-Core"
+      - "Hysteria Turbo"
+      - "DIRECT"
+  - name: "Keep-Alive"
+    type: url-test
+    proxies:
+      - "Hysteria Turbo"
+    url: 'http://www.gstatic.com/generate_204'
+    interval: 20
+    tolerance: 500
 
 rules:
-  - MATCH,PROXY
-                """.trimIndent()
-                
-                configFile.writeText(zivpnConfig)
+  - MATCH,ZIVPN Turbo
+            """.trimIndent()
+            
+            configFile.writeText(zivpnConfig)
 
-                // 3. Load to Clash Core
-                Clash.load(profileDir).await()
+            // 4. Initial Load
+            Clash.load(profileDir).await()
+            StatusProvider.currentProfile = "ZIVPN Turbo"
+            service.sendProfileLoaded(ZIVPN_UUID)
+            
+        } catch (e: Exception) {
+            Log.e("ConfigurationModule", "Failed to initialize ZIVPN config", e)
+            return enqueueEvent(LoadException(e.message ?: "Init Failed"))
+        }
+        // --- ZIVPN FORCE INIT END ---
 
-                // 4. Update Status
-                StatusProvider.currentProfile = "ZIVPN Native"
-                service.sendProfileLoaded(ZIVPN_UUID)
-
-                Log.i("ConfigurationModule: ZIVPN Single-Mode Loaded Successfully (Clean Config)")
-            } catch (e: Exception) {
-                Log.e("ConfigurationModule: Failed to load ZIVPN config", e)
-                return enqueueEvent(LoadException(e.message ?: "Unknown"))
+        // Event Loop (Only for reloads/updates if necessary)
+        while (true) {
+            select<Unit> {
+                broadcasts.onReceive {
+                    // Ignore user changes, just reload current ZIVPN config
+                    try {
+                         // Re-force active profile just in case
+                        if (store.activeProfile != ZIVPN_UUID) {
+                             store.activeProfile = ZIVPN_UUID
+                        }
+                        
+                        val profileDir = service.importedDir.resolve(ZIVPN_UUID.toString())
+                        Clash.load(profileDir).await()
+                        service.sendProfileLoaded(ZIVPN_UUID)
+                    } catch (e: Exception) {
+                        Log.e("ConfigurationModule", "Reload failed", e)
+                    }
+                }
             }
         }
     }
