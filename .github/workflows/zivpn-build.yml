@@ -44,6 +44,6 @@ jobs:
       - name: Upload ZIVPN Native APK
         uses: actions/upload-artifact@v4
         with:
-          name: ZIVPN-Native-Release-APK
+          name: ZIVPN-Native-Experimental-APK
           path: |
             app/build/outputs/apk/alpha/release/*.apk
