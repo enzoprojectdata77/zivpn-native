@@ -170,9 +170,16 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         supervisorJobs.add(job)
     }
 
-    private fun startZivpnCores() {
+    private fun killCores() {
+        try {
+            Runtime.getRuntime().exec("killall libuz_core.so libload_core.so")
+        } catch (e: Exception) {
+            // Ignore
+        }
+    }
+
+    private suspend fun startZivpnCoresAndClash() {
         val nativeDir = applicationInfo.nativeLibraryDir
-        val binDir = cacheDir.resolve("bin") // Keep for future use
         
         val libUz = "$nativeDir/libuz_core.so"
         val libLoad = "$nativeDir/libload_core.so"
@@ -187,7 +194,7 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
         
         val env = mapOf("LD_LIBRARY_PATH" to nativeDir)
 
-        Log.d("ZIVPN: Initializing Smart Resonant Engine (Health Checked)...")
+        Log.i("ZIVPN: Phase 1 - Starting 4 Hysteria Cores...", null)
 
         // 1. Start 4 Hysteria Cores
         val tunnels = mutableListOf<String>()
@@ -195,7 +202,6 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             val port = ports[i]
             val range = if (i < ranges.size) ranges[i] else zivpnStore.portRanges 
             
-            // Optimized Config
             val configContent = """{"server":"$serverHost:$range","obfs":"$obfs","auth":"$pass","socks5":{"listen":"127.0.0.1:$port"},"insecure":true,"recvwindowconn":131072,"recvwindow":327680,"disable_mtu_discovery":true,"resolver":"8.8.8.8:53"}"""
             val command = listOf(libUz, "-s", obfs, "--config", configContent)
             
@@ -203,10 +209,23 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             tunnels.add("127.0.0.1:$port")
         }
         
+        Log.i("ZIVPN: Waiting 1.5s for Hysteria Handshake...", null)
+        delay(1500)
+
         // 2. Start Load Balancer
+        Log.i("ZIVPN: Phase 2 - Starting Load Balancer on 7777...", null)
         val lbArgs = mutableListOf(libLoad, "-lport", "7777", "-tunnel")
         lbArgs.addAll(tunnels)
         startDaemon("ZIVPN-LB", lbArgs, env, 7777)
+
+        Log.i("ZIVPN: Waiting 1.5s for Load Balancer Stability...", null)
+        delay(1500)
+
+        // 3. Start Clash Core
+        Log.i("ZIVPN: Phase 3 - Launching Clash Core...", null)
+        withContext(Dispatchers.Main) {
+            runtime.launch()
+        }
     }
 
     private fun stopZivpnCores() {
@@ -217,7 +236,8 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
             coreProcesses.forEach { it.destroy() }
             coreProcesses.clear()
         }
-        Log.i("ZIVPN: All cores stopped")
+        killCores()
+        Log.i("ZIVPN: All cores stopped", null)
     }
 
     override fun onCreate() {
@@ -232,12 +252,14 @@ class TunService : VpnService(), CoroutineScope by CoroutineScope(Dispatchers.De
 
         StatusProvider.serviceRunning = true
 
-        startZivpnCores()
+        killCores() // Clean up before start
 
         StaticNotificationModule.createNotificationChannel(this)
         StaticNotificationModule.notifyLoadingNotification(this)
 
-        runtime.launch()
+        launch(Dispatchers.IO) {
+            startZivpnCoresAndClash()
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
