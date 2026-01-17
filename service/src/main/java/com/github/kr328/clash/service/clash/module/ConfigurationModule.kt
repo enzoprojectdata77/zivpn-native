@@ -127,7 +127,7 @@ proxies:
     type: socks5
     server: 127.0.0.1
     port: 7777
-    udp: true
+    udp: false
 
 proxy-groups:
   - name: "ZIVPN Turbo"
